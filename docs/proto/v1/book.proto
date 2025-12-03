@@ -1,0 +1,216 @@
+syntax = "proto3";
+
+package mathbdw.grpc.v1;
+
+import "validate/validate.proto";
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+option go_package = "github.com/mathbdw/book/proto";
+option (.grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "Book Service API";
+    version: "1.0";
+    description: "API for book management with OpenAPI v3";
+    contact: {
+      name: "API Support";
+      url: "https://github.com/mathbdw/book";
+      email: "support@example.com";
+    };
+  };
+  schemes: HTTP;
+  schemes: HTTPS;
+  consumes: "application/json";
+  produces: "application/json";
+  security_definitions: {
+    security: {
+      key: "bearer";
+      value: {
+        type: TYPE_API_KEY;
+        in: IN_HEADER;
+        name: "Authorization";
+        description: "Bearer token authentication";
+      }
+    }
+  }
+};
+
+message Book {
+  int64 id = 1 [(.grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Identificator Book"
+    example: '1'
+  }];
+  string Title = 2
+      [(.grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+        description: "Book title"
+        example: '"The Book"'
+      }];
+  string Description = 3
+      [(.grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+        description: "Description"
+        example: '"The Book Adventure"'
+      }];
+  int32 Year = 4
+      [(.grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+        description: "Year the book was written"
+        example: '2000'
+      }];
+  string Genre = 5
+      [(.grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+        description: "Genre of book"
+        example: '"Adventure"'
+      }];
+}
+
+message BookGetRequest {
+  repeated int64 book_id = 1 [
+    (validate.rules).repeated = {
+      min_items: 1,
+      max_items: 10,
+      unique: true,
+      ignore_empty: false,
+      items: { int64: { gte: 1 } }
+    },
+    (.grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Slice identificators. Unique params."
+      example: '[1,2]'
+    }
+  ];
+}
+
+message BookAddRequest {
+  string title = 1 [
+    (validate.rules).string = { min_len: 2, max_len: 128 },
+    (.grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Title the book"
+      example: '"Book"'
+    }
+  ];
+  string description = 2 [
+    (validate.rules).string = { min_len: 2 },
+    (.grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Description the book"
+      example: '"Description"'
+    }
+  ];
+  int32 year = 3 [
+    (validate.rules).int32                                       = { gte: 1 },
+    (.grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Year the book"
+      example: '2000'
+    }
+  ];
+  string genre = 4 [
+    (validate.rules).string = { min_len: 2 },
+    (.grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Genre the book"
+      example: '"Adventure"'
+    }
+  ];
+}
+
+message BookListRequest {
+  message CursorPagination {
+    string cursor = 1
+        [(.grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+          description: "String cursor"
+          example: '"qwefszvs"'
+        }];
+    uint64 page_size = 2 [
+      (validate.rules).uint64 = { in: [ 2, 10, 50 ] },
+      (.grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+        description: "Size rows on page"
+        example: '2'
+      }
+    ];
+    string sort_by = 3 [
+      (validate.rules).string = { in: [ "id", "title", "year" ] },
+      (.grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+        description: "Sorting field"
+        example: '"year"'
+      }
+    ];
+    string sort_order = 4 [
+      (validate.rules).string = { in: [ "asc", "desc" ] },
+      (.grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+        description: "Sorting order"
+        example: '"asc"'
+      }
+    ];
+  }
+  CursorPagination pagination = 1 [
+    (validate.rules).message.required                            = true,
+    (.grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "map params for pagination"
+    }
+  ];
+}
+
+message BooksResponse {
+  repeated Book book = 1
+      [(.grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+        description: "Array books"
+      }];
+}
+
+message BookListResponse {
+  message CursorPagination {
+    string cursorNext = 1 [
+      (validate.rules).string = { min_len: 1 },
+      (.grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+        description: "Sorting order"
+        example: '"asc"'
+      }
+    ];
+  }
+  CursorPagination pagination = 1;
+  repeated Book    books      = 2;
+}
+
+service BookService {
+  rpc GetByIDs(BookGetRequest) returns (BooksResponse) {
+    option (google.api.http) = {
+      get: "/v1/books"
+    };
+    option (.grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get books by IDs"
+      description: "Get books by their IDs\n\n### Custom Headers:\n- **X-Request-ID**: Unique request identifier\n- **X-Upload-Token**: Upload authorization token"
+      tags: "books"
+    };
+  }
+
+  rpc Add(BookAddRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/v1/books"
+      body: "*"
+    };
+    option (.grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create a new book"
+      description: "Create a new book in the system"
+      tags: "books"
+    };
+  }
+
+  rpc List(BookListRequest) returns (BookListResponse) {
+    option (google.api.http) = {
+      get: "/v1/book-list"
+    };
+    option (.grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List of books on pagination"
+      description: "Returns a list of books by pages"
+      tags: "books"
+    };
+  }
+
+  rpc Delete(BookGetRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v1/books"
+    };
+    option (.grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Delete books by IDs"
+      description: "Deletes books by IDs"
+      tags: "books"
+    };
+  }
+}

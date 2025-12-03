@@ -1,0 +1,80 @@
+project:
+  name: Book service
+  debug: true
+  environment: development
+  version: 1.0.0
+
+graylog:
+  host: 127.0.0.1
+  port: 12201
+  version: 1.1
+  status: true
+
+grpc:
+  host: 0.0.0.0
+  port: 8082
+  maxConnectionIdle: 5 # Minutes
+  timeout: 15 # Seconds
+  maxConnectionAge: 5 # Minutes
+
+rest:
+  host: 0.0.0.0
+  port: 8080
+
+metric:
+  host: localhost
+  port: 4317
+  timeout: 5s
+  insecure: true
+  exporterInterval: 30s
+  exporterTimeout: 10s
+
+tracer:
+  host: localhost
+  port: 4317
+  timeout: 5s
+  insecure: true
+
+status:
+  host: 0.0.0.0
+  port: 8000
+  livenessPath: /live
+  readinessPath: /ready
+  versionPath: /version
+
+database:
+  # host: postgres
+  # port: 5432
+  # host: localhost
+  # port: 5433
+  # user: postgres
+  # password: postgres
+  name: book
+  sslmode: disable
+  migrations: migrations
+  driver: pgx
+  maxOpenConns: 5
+  maxIdleConns: 5
+  connMaxIdleTime: 5m
+  connMaxLifetime: 5m
+  
+kafka:
+  publisher:
+    batchSize: 5
+    interval: 30s
+    countWorkers: 2
+  topics:
+    publish: add_book
+  producer:
+    returnSuccesses: true
+    requiredAcks: -1
+    compression: 2
+    partitioner: random
+  brokers:
+    - localhost:19092
+    - localhost:19093
+    - localhost:19094
+
+telegram:
+  # token: qwer
+  readTimeout: 60
