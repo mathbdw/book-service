@@ -104,6 +104,8 @@ func (r *bookRepository) GetByIDs(ctx context.Context, IDs []int64) ([]entities.
 
 		return []entities.Book{}, errs.Wrap(err, "bookPostgres.GetByIds: error query")
 	}
+	rows.Close()
+
 	books := make([]entities.Book, 0, len(IDs))
 	for rows.Next() {
 		var book entities.Book
@@ -115,6 +117,13 @@ func (r *bookRepository) GetByIDs(ctx context.Context, IDs []int64) ([]entities.
 			return []entities.Book{}, errs.Wrap(err, "bookPostgres.GetByIds: error scan")
 		}
 		books = append(books, book)
+	}
+
+	if err := rows.Err(); err != nil {
+		span.RecordError(err)
+		span.SetAttributes([]observability.Attribute{{Key: "iteration.failed", Value: true}})
+
+		return nil, errs.Wrap(err, "bookPostgres.Lock: iteration rows")
 	}
 
 	if len(books) == 0 {
@@ -162,6 +171,7 @@ func (r *bookRepository) List(ctx context.Context, params entities.PaginationPar
 
 		return nil, errs.Wrap(err, "bookPostgres.List: error query")
 	}
+	rows.Close()
 
 	books := make([]entities.Book, 0, limit)
 	for rows.Next() {
@@ -174,6 +184,13 @@ func (r *bookRepository) List(ctx context.Context, params entities.PaginationPar
 			return nil, errs.Wrap(err, "bookPostgres.List: error scan")
 		}
 		books = append(books, book)
+	}
+
+	if err := rows.Err(); err != nil {
+		span.RecordError(err)
+		span.SetAttributes([]observability.Attribute{{Key: "iteration.failed", Value: true}})
+
+		return nil, errs.Wrap(err, "bookPostgres.Lock: iteration rows")
 	}
 
 	if len(books) == 0 {

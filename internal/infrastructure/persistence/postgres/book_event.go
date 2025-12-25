@@ -117,6 +117,7 @@ func (r *bookEventRepository) Lock(ctx context.Context, batchSize uint64) ([]ent
 
 		return nil, errors.Wrap(err, "bookEventPostgres.Lock: executing query")
 	}
+	defer rows.Close()
 
 	events := make([]entities.BookEvent, 0, batchSize)
 	for rows.Next() {
@@ -133,9 +134,9 @@ func (r *bookEventRepository) Lock(ctx context.Context, batchSize uint64) ([]ent
 
 	if err := rows.Err(); err != nil {
 		span.RecordError(err)
-		span.SetAttributes([]observability.Attribute{{Key: "during.iteration.failed", Value: true}})
+		span.SetAttributes([]observability.Attribute{{Key: "iteration.failed", Value: true}})
 
-		return nil, errors.Wrap(err, "bookEventPostgres.Lock: errors during iteration")
+		return nil, errors.Wrap(err, "bookEventPostgres.Lock: iteration rows")
 	}
 
 	success = true
